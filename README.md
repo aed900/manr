@@ -8,7 +8,7 @@ sudo apt-get install groff
 
 sudo apt-get install less
 
-Open manual pages by running the program along with the page name or a section number and page name.
+Open manual pages by running the program along with a page name or a section number and page name.
 
 Examples:
 
