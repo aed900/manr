@@ -1,0 +1,4 @@
+# directory location of manual pages (default is: /usr/share/man/)
+
+[default]
+file_path = "/usr/share/man/"
