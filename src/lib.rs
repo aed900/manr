@@ -12,10 +12,8 @@ type MyResult<T> = Result<T, Box<dyn Error>>;
 // Configuration struct for a manual page.
 #[derive(Debug)]
 pub struct Config {
-    // (Currently working with a single page at a time. Needs to be updated to a Vector to handle a file queue that can load multiple pages sequentially.) 
     page: String,
-    // (Needs to be updated to a String to be able to handle section suffixes such as "1ssl" etc..)
-    section: u8,
+    section: String,
     file_path: String,
 }
 
@@ -24,7 +22,7 @@ impl Config {
     pub fn new() -> MyResult<Config> {
         // Set default values.
         let mut page = String::from("-");
-        let mut section = 1;
+        let mut section = "1".to_string();
         let mut default_path = default_file_path();
         let mut file_path = format!("{}/man{}/{}.{}.gz", default_path.trim_matches('"'), section, page, section);
         let source_dir = env::current_dir().unwrap();
@@ -37,6 +35,9 @@ impl Config {
     
         // Collect user arguments.
         let args: Vec<String> = env::args().collect();
+
+        // Create a file queue so multiple manuals can be opened sequentially in a single command.
+        let mut queue: Vec<String> = Vec::new();
     
         // Match user arguments according to the number supplied and subsequent details.
         match args.len() {
@@ -106,6 +107,14 @@ impl Config {
                             let search_term = args[2].clone().to_lowercase();
                             index_apropos_search(search_term);           
                         },
+                        // Check if a section number with an extended text suffix such as "1ssl".
+                        sect if sect.chars().next().expect("Failed to check first char of first arg is a digit.").is_digit(10) => {
+                            let section = &arg;
+                            let sect_num = &sect.chars().next().expect("Failed to check first char of first arg is a digit.").to_string();
+                            let page = args[2].clone().to_lowercase();
+                            let file_path = format!("{}/man{}/{}.{}.gz", default_path.trim_matches('"'), sect_num, page, section);
+                            run(file_path);
+                        },
                         // (Check if additional arguments are valid manual page names and if so add to a viewing queue (unimplemented!)).
                         // Or if begins with "--" or "-" notify of unrecognised/invalid option.
                         _ => {
@@ -116,17 +125,38 @@ impl Config {
                                 println!("manr: invalid option -- '{}'", arg);
                                 help();
                             } else {
-                                println!("No manual entry for {}. Please provide only one manual name at a time.", arg);
-                                help();
+                                let page1 = arg.to_lowercase();
+                                let page2 = args[2].clone().to_lowercase();
+                                first_section(page1);
+                                first_section(page2);
                             }
                         },
                     }
                 }
             },
-            // For all the other cases show an error/help message. (In the future support a loading queue for multiple valid manual page arguments).
+            // For all the other cases check if a section or manual page is provided and load multiple files sequentially. 
+            // (Needs a file queue to prompt user to continue between each file.)
             _ => {
-                println!("No manual entry. Please provide only one manual name at a time.");
-                help();
+                // Iterate over collected user arguments and skip the first default.
+                let mut args_iter = args.iter().skip(1);
+
+                // While arguments exist loop through them.
+                while let Some(arg) = args_iter.next().clone() {
+                    match arg.as_str() {
+                        // Check if a section number with an extended text suffix such as "1ssl".
+                        sect if sect.chars().next().unwrap().is_digit(10) => {
+                            let section = &arg.to_lowercase();
+                            let sect_num = &sect.chars().next().unwrap().to_string().to_lowercase();
+                            let page = args_iter.next().clone().unwrap().to_string().to_lowercase();
+                            let file_path = format!("{}/man{}/{}.{}.gz", default_path.trim_matches('"'), sect_num, page, section);
+                            run(file_path);
+                        }
+                    _ => {
+                        let page = arg.to_string().to_lowercase();
+                        first_section(page);
+                        }
+                    }
+                }
             }
         }
 
@@ -206,14 +236,19 @@ fn extract_gzip(path: String) -> String {
     // Extract the contents of the buffer into a String.
     let mut gzip = GzDecoder::new(&buffer[..]);
     let mut contents = String::new();
-    // Check if the file extracted successfully and if not print the error.
+    // Check if the file extracted successfully and if not log the error and continue (function to log errors not yet implemented!).
     match gzip.read_to_string(&mut contents) {
         Ok(extracted) => Ok(extracted),
         Err(e) =>
-            Err(println!("Error extracting gzip file {:?}: {}", gzip, e)),
+            Err(format!("Error extracting gzip file {:?}: {}", gzip, e)),
     };
 
     contents
+}
+
+// A file queue to prompt user to continue, skip or quit if opening multiple pages sequentially in a single command.
+fn file_queue(page: String) -> MyResult<()> {
+    unimplemented!();
 }
 
 // Recursively list and sort all sections within a configured search directory.
