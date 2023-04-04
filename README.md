@@ -1,5 +1,5 @@
 # manr
-A prototype Rust version of man - "an interface to the system reference manuals"
+A prototype Rust version of **man** - "an interface to the system reference manuals"
 
 This program currently requires groff and less to also be installed. 
 Depending on Linux distro these can be installed if not already as follows:
