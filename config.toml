@@ -1,4 +1,7 @@
-# directory location of manual pages (default is: /usr/share/man/)
+# Directory location of manual pages. 
+# Default settings below (copy and remove hash symbols to restore):
+# [default]
+# file_path = "/usr/share/man/"
 
 [default]
 file_path = "/usr/share/man/"
