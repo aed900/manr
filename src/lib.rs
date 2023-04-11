@@ -9,7 +9,7 @@ use log::{error};
 // A custom Result type that accepts generic types and uses Error trait to dynamically handle errors.
 type BoxResult<T> = Result<T, Box<dyn Error>>;
 
-// An enum to set whether a function fails on errors or simply logs them.
+// Set whether a function fails on errors or simply logs them.
 #[derive(PartialEq)]
 pub enum ErrorAction {
     Fail,
@@ -232,8 +232,8 @@ pub fn extract_gzip(path: String, errors: ErrorAction) -> BoxResult<String> {
                 // Downcast boxed error to type that implements the std Error trait.
                 if let Some(err) = e.downcast_ref::<io::Error>() {
                     match err.kind() {
-                        ErrorKind::NotFound => eprintln!("No manual entry for {} in section {}", &page, &section),
-                        ErrorKind::PermissionDenied => eprintln!("Permission denied for {} in section {}", &page, &section),
+                        ErrorKind::NotFound => println!("No manual entry for {} in section {}", &page, &section),
+                        ErrorKind::PermissionDenied => println!("Permission denied for {} in section {}", &page, &section),
                         _ => println!("Error opening file {:?}", err),
                     }
                 }
