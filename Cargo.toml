@@ -12,3 +12,9 @@ flate2 = "1"
 toml = "0"
 serde = { version = "1.0", features = ["derive"] }
 bincode2 = "2"
+log = "0"
+env_logger = "0"
+
+[dev-dependencies]
+assert_cmd = "2"
+predicates = "2"
