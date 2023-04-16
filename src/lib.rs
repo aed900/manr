@@ -45,7 +45,7 @@ pub fn get_args() -> BoxResult<()> {
                 if (1..=9).contains(&section) {
                     println!("No manual entry for {}\n(Alternatively, what manual page do you want from section {}?)\nFor example, try 'manr manr'.", section, section);
                 }
-            // Check if command to update index cache. Or check if a valid flag/option and ask for related argument.
+            // Else check if command to update index cache or a valid flag/option and if the latter ask for related argument.
             } else if let Some(arg) = Some(args[1].clone()) {
                 match arg.as_str() {
                     // Command to update the index bin file containing all the manual page details. Runs automatically if empty.
@@ -60,7 +60,7 @@ pub fn get_args() -> BoxResult<()> {
                         println!("apropos what?")
                     },
                     // Check if argument begins with "--" or "-" and notify of unrecognised/invalid option. 
-                    // Or if a valid manual page run the lowest available section number.
+                    // Or else check if a valid manual page by running the lowest available section number.
                     _ => {
                         if arg.starts_with("--") {
                             println!("manr: unrecognised option -- '{}'", arg);
@@ -84,7 +84,7 @@ pub fn get_args() -> BoxResult<()> {
                     let file_path = format!("{}/man{}/{}.{}.gz", default_path.trim_matches('"'), section, page, section);
                     run(file_path)?;
                 } else {
-                    // Run lowest section number available if valid manual name but provided section number is outside 1-9 range.
+                    // Else run lowest section number available if valid manual name but provided section number is outside 1-9 range.
                     let page = args[2].clone().to_lowercase();
                     first_section(page)?;
                 }
@@ -99,7 +99,7 @@ pub fn get_args() -> BoxResult<()> {
                         let search_term = args[2].clone().to_lowercase();
                         index_apropos_search(search_term)?;           
                     },
-                    // Check if a section number with an extended suffix including text, such as "1ssl".
+                    // Check if a section number, including those with an extended suffix including text, such as "1ssl".
                     sect if sect.chars().next().unwrap().is_digit(10) => {
                         let section = &arg;
                         let sect_num = sect.chars().next().unwrap().to_string();
@@ -158,7 +158,7 @@ pub fn get_args() -> BoxResult<()> {
 
 // Get default directory for manual pages from config.toml.
 fn default_file_path() -> BoxResult<String> {
-    // Load the config file contents.
+    // Load the config file contents into a new String.
     let mut config_toml = File::open("config.toml")?;
     let mut config_str = String::new();
     config_toml.read_to_string(&mut config_str)?;
@@ -203,7 +203,7 @@ pub fn run(path: String) -> BoxResult<()> {
 }
 
 // Open a file and read its contents into a Vector.
-pub fn open_file(path: String) -> BoxResult<Vec<u8>> {
+fn open_file(path: String) -> BoxResult<Vec<u8>> {
     let mut file = File::open(path.clone())?;
     let mut contents = Vec::new();
     file.read_to_end(&mut contents)?;
@@ -274,7 +274,7 @@ pub fn extract_gzip(path: String, errors: ErrorAction) -> BoxResult<String> {
 fn list_all_sections() -> BoxResult<Vec<DirEntry>> {
     let default_path = default_file_path()?.to_string();
 
-    // A regex for a suffix covering filenames formatted like "name.1.gz" with a numeric range of 1-9, as well as optional alphabetic characters before the .gz extension (ie: name.1ssl.gz).
+    // A regex for a suffix covering filenames formatted like "name.1.gz" with a numeric range of 1-9, as well as with optional alphabetic characters in the section before the .gz extension (ie: name.1ssl.gz).
     let suffix = Regex::new(r"\.([1-9])(?:[a-zA-Z]*)?\.gz$")?;
 
     // List all files in a search directory adhering to the regex pattern.
@@ -301,19 +301,19 @@ fn format_filename_description(path: String) -> BoxResult<String> {
     let mut result = String::new();
         
     // Split path from filename and format filenames by removing .gz extension and splitting at last "." character. Then add relevant description.
-    if let Some(title) = Some(path.split("/").last().unwrap()) {
-        let mut title = title.trim_end_matches(".gz").rsplitn(2, '.');
-        let suffix = title.next().unwrap();
+    if let Some(filename) = Some(path.split("/").last().unwrap()) {
+        let mut title = filename.trim_end_matches(".gz").rsplitn(2, '.');
+        let section = title.next().unwrap();
         let page = title.next().unwrap();
 
-        let new_filename = format!("{} ({}) - {}", page, suffix, description);
+        let new_filename = format!("{} ({}) - {}", page, section, description);
         result.push_str(&new_filename);
     }
 
     Ok(result)
 }
 
-// Find and run/display the lowest section number if only one argument provided by user.
+// Find and run/display the lowest section number if none is provided by user.
 fn first_section(page: String) -> BoxResult<()> {
     // Load all entries in the index cache and create a new results Vector.
     let files: HashMap<u32, Cache> = deserialise_index()?;
@@ -364,22 +364,24 @@ fn get_description(path: String) -> BoxResult<String> {
                 // Check if the next lines contain or end with additional formatting.
                 if next_lines.to_lowercase().contains(".nd") {
                     // If line ends with additional formatting then skip it and get description from the following line.
-                    if next_lines.ends_with(".nd") || next_lines.ends_with(".nd ") {
+                    if next_lines.trim_end().ends_with(".nd") {
                         if let Some(following_line) = iter.next() {
                             let text = &following_line.to_lowercase();
                             description.push_str(&text);
                             found = true;
                             break;
                         }
+                    // Else if the next lines don't end with additional formatting remove the .ndf formatting and get the description from that line.
                     } else {
                         let text = next_lines.to_lowercase().replacen(".nd ", "", 1);
                         description.push_str(&text);
                         found = true;
                         break;
                     }
+                // Else check if the next lines contain or end with different additional formatting containing "-" and get the description.
                 } else {
-                    if next_lines.contains("- ") || next_lines.ends_with("-") {
-                        if next_lines.ends_with("-")  || next_lines.ends_with("- ") || next_lines.ends_with("- \\") || next_lines.ends_with("- \\ ") {
+                    if next_lines.trim_end().contains("-") {
+                        if next_lines.trim_end().ends_with("-")  || next_lines.trim_end().ends_with("- \\") {
                             if let Some(following_line) = iter.next() {
                                 let text = &following_line.to_lowercase();
                                 description.push_str(&text);
@@ -415,7 +417,7 @@ struct Cache {
 }
 
 // Create an index cache HashMap for faster searching of manual pages and short descriptions. Automatically runs if empty.
-// Can be updated on demand by using the mandb command or could be auto run periodically using a cron job.
+// Can be updated on demand by using the makewhatis command or could be auto run periodically using a cron job.
 // (Needs modified to only update files changed or added since last run.)
 fn index_cache() -> BoxResult<std::io::Result<()>> {
     let mut index = HashMap::new();
@@ -525,7 +527,7 @@ fn display_index_results(mut results: Vec<String>, search_term: String) -> BoxRe
     Ok(())
 }
 
-// A default help message to be displayed.
+// A default help message to be displayed. 
 fn help() {
     println!("Try 'manr --help' or 'manr --usage' for more information.");
 }
