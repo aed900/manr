@@ -3,8 +3,8 @@ use std::{env, fs::File, error::Error, path::PathBuf, process, process::Command,
 use walkdir::{DirEntry, WalkDir};
 use regex::Regex;
 use flate2::read::GzDecoder;
-use toml::{Value};
-use log::{error};
+use toml::Value;
+use log::error;
 
 // A custom Result type that accepts generic types and uses Error trait to dynamically handle errors.
 type BoxResult<T> = Result<T, Box<dyn Error>>;
