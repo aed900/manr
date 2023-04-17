@@ -378,7 +378,8 @@ fn get_description(path: String) -> BoxResult<String> {
                         found = true;
                         break;
                     }
-                // Else check if the next lines contain "-" or when trimmed end with different additional formatting containing "-" or "- \\". Then get description.
+                // Else check if the next lines contain "-" and if after trimming end with additional formatting containing "-" or "- \\". 
+                // Then get description.
                 } else {
                     if next_lines.contains("-") {
                         if next_lines.trim_end().ends_with("-")  || next_lines.trim_end().ends_with("- \\") {
@@ -387,7 +388,8 @@ fn get_description(path: String) -> BoxResult<String> {
                                 description.push_str(&text);
                                 found = true;    
                                 break; 
-                            }                   
+                            }
+                        // Else if next lines don't end with "-"   then split on that line by "- " to get description.              
                         } else {
                             if let Some(text) = Some(&next_lines.to_lowercase().split("- ").last().unwrap().to_string()) {
                                 description.push_str(&text);
