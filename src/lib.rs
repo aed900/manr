@@ -371,7 +371,7 @@ fn get_description(path: String) -> BoxResult<String> {
                             found = true;
                             break;
                         }
-                    // Else if the next lines don't end with .nd remove the formatting and get the description from that line.
+                    // Else if the next lines don't end with .nd remove the ".nd " formatting and get the description from that line.
                     } else {
                         let text = next_lines.to_lowercase().replacen(".nd ", "", 1);
                         description.push_str(&text);
