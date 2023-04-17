@@ -212,7 +212,7 @@ fn open_file(path: String) -> BoxResult<Vec<u8>> {
 
 // Extract gzip files into String contents.
 pub fn extract_gzip(path: String, errors: ErrorAction) -> BoxResult<String> {
-    // Split file path from filename and format name by removing .gz extension and splitting at last "." character. Then add relevant description.
+    // Split file path from filename and format name by removing .gz extension and splitting at last "." character. 
     let file_path = path.clone();
     let mut filename = file_path.split("/").last().unwrap().trim_end_matches(".gz").rsplitn(2, '.');
     let section = filename.next().unwrap();
@@ -359,7 +359,7 @@ fn get_description(path: String) -> BoxResult<String> {
     // Iterate over the Vector's lines while they exist or until they match a pattern.
     while let Some(line) = iter.next() {
         // If line contains the relevant troff/markdown formatting then get the description from the next lines.
-        if line.trim_end().to_lowercase().contains(".sh name") || line.trim_end().to_lowercase().contains(".sh \"name\"") {
+        if line.to_lowercase().contains(".sh name") || line.to_lowercase().contains(".sh \"name\"") {
             while let Some(next_lines) = iter.next() {
                 // Check if the next lines contain or end with additional formatting cointaining .nd.
                 if next_lines.to_lowercase().contains(".nd") {
