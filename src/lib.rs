@@ -43,7 +43,7 @@ pub fn get_args() -> BoxResult<()> {
             // Check if a section number between 1-9 and if so ask for a related manual page.
             if let Ok(section) = args[1].clone().parse::<u8>() {
                 if (1..=9).contains(&section) {
-                    println!("No manual entry for {}\n(Alternatively, what manual page do you want from section {}?)\nFor example, try 'manr manr'.", section, section);
+                    println!("No manual entry for {}\n(Alternatively, what manual page do you want from section {}?)\nFor example, try 'manr man'.", section, section);
                 }
             // Else check if command to update index cache or a valid flag/option and if the latter ask for related argument.
             } else if let Some(arg) = Some(args[1].clone()) {
