@@ -389,7 +389,7 @@ fn get_description(path: String) -> BoxResult<String> {
                                 found = true;    
                                 break; 
                             }
-                        // Else if next lines don't end with "-"   then split on that line by "- " to get description.              
+                        // Else if next lines don't end with "-" then split on that line by "- " to get description.              
                         } else {
                             if let Some(text) = Some(&next_lines.to_lowercase().split("- ").last().unwrap().to_string()) {
                                 description.push_str(&text);
