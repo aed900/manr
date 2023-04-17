@@ -35,7 +35,7 @@ pub fn get_args() -> BoxResult<()> {
     match args.len() {
         // If no arguments provided ask which manual page wanted.
         1 => {
-            println!("What manual page do you want?\nFor example, try 'manr manr'.");
+            println!("What manual page do you want?\nFor example, try 'manr man'.");
         },
         // If one argument is provided treat it as the manual page name and provide the lowest related section number. 
         // Or else check if a section number or flag/option and if valid ask for additional argument.
@@ -274,7 +274,7 @@ pub fn extract_gzip(path: String, errors: ErrorAction) -> BoxResult<String> {
 fn list_all_sections() -> BoxResult<Vec<DirEntry>> {
     let default_path = default_file_path()?.to_string();
 
-    // A regex for a suffix covering filenames formatted like "name.1.gz" with a numeric range of 1-9, as well as with optional alphabetic characters in the section before the .gz extension (ie: name.1ssl.gz).
+    // A regex for a suffix covering filenames formatted like "name.1.gz" or "name.1ssl.gz" with a numeric range of 1-9.
     let suffix = Regex::new(r"\.([1-9])(?:[a-zA-Z]*)?\.gz$")?;
 
     // List all files in a search directory adhering to the regex pattern.
@@ -359,11 +359,11 @@ fn get_description(path: String) -> BoxResult<String> {
     // Iterate over the Vector's lines while they exist or until they match a pattern.
     while let Some(line) = iter.next() {
         // If line contains the relevant troff/markdown formatting then get the description from the next lines.
-        if line.to_lowercase().contains(".sh name") || line.to_lowercase().contains(".sh \"name\"") {
+        if line.trim_end().to_lowercase().contains(".sh name") || line.trim_end().to_lowercase().contains(".sh \"name\"") {
             while let Some(next_lines) = iter.next() {
-                // Check if the next lines contain or end with additional formatting.
+                // Check if the next lines contain or end with additional formatting cointaining .nd.
                 if next_lines.to_lowercase().contains(".nd") {
-                    // If line ends with additional formatting then skip it and get description from the following line.
+                    // If the trimmed line ends with additional formatting then skip it and get description from the following line.
                     if next_lines.trim_end().ends_with(".nd") {
                         if let Some(following_line) = iter.next() {
                             let text = &following_line.to_lowercase();
@@ -378,9 +378,9 @@ fn get_description(path: String) -> BoxResult<String> {
                         found = true;
                         break;
                     }
-                // Else check if the next lines contain or end with different additional formatting containing "-" and get the description.
+                // Else check if the next lines contain "-" or when trimmed end with different additional formatting containing "-" or "- \\". Then get description.
                 } else {
-                    if next_lines.trim_end().contains("-") {
+                    if next_lines.contains("-") {
                         if next_lines.trim_end().ends_with("-")  || next_lines.trim_end().ends_with("- \\") {
                             if let Some(following_line) = iter.next() {
                                 let text = &following_line.to_lowercase();
@@ -389,10 +389,12 @@ fn get_description(path: String) -> BoxResult<String> {
                                 break; 
                             }                   
                         } else {
-                            let text = &next_lines.to_lowercase().split("- ").last().unwrap().to_string();
-                            description.push_str(&text);
-                            found = true;
-                            break;
+                            if let Some(text) = Some(&next_lines.to_lowercase().split("- ").last().unwrap().to_string()) {
+                                description.push_str(&text);
+                                found = true;
+                                break;
+                            }
+
                         }
                     }
                 }
