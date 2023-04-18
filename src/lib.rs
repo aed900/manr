@@ -81,7 +81,7 @@ pub fn get_args() -> BoxResult<()> {
             if let Ok(section) = args[1].clone().parse::<u8>() {
                 if (1..=9).contains(&section) {
                     let page = args[2].clone().to_lowercase();
-                    let file_path = format!("{}/man{}/{}.{}.gz", default_path.trim_matches('"'), section, page, section);
+                    let file_path = format!("{}/man{}/{}.{}.gz", default_path, section, page, section);
                     run(file_path)?;
                 } else {
                     // Else run lowest section number available if valid manual name but provided section number is outside 1-9 range.
@@ -104,7 +104,7 @@ pub fn get_args() -> BoxResult<()> {
                         let section = &arg;
                         let sect_num = sect.chars().next().unwrap().to_string();
                         let page = args[2].clone().to_lowercase();
-                        let file_path = format!("{}/man{}/{}.{}.gz", default_path.trim_matches('"'), sect_num, page, section);
+                        let file_path = format!("{}/man{}/{}.{}.gz", default_path, sect_num, page, section);
                         run(file_path)?;
                     },
                     // Check if additional arguments are valid manual page names and if so open sequentially.
@@ -140,7 +140,7 @@ pub fn get_args() -> BoxResult<()> {
                         let section = &arg.to_lowercase();
                         let sect_num = sect.chars().next().unwrap().to_string().to_lowercase();
                         let page = args_iter.next().clone().unwrap().to_string().to_lowercase();
-                        let file_path = format!("{}/man{}/{}.{}.gz", default_path.trim_matches('"'), sect_num, page, section);
+                        let file_path = format!("{}/man{}/{}.{}.gz", default_path, sect_num, page, section);
                         run(file_path)?;
                     }
                 _ => {
@@ -166,8 +166,8 @@ fn default_file_path() -> BoxResult<String> {
     // Parse the values from the config file.
     let config_file: Value = toml::from_str(&config_str)?;
     let default_path = config_file["default"]["file_path"].to_string();
-   
-    Ok(default_path)
+
+    Ok(default_path.trim_matches('"').to_string())
 }
 
 // Run and display manual files.
@@ -278,7 +278,7 @@ fn list_all_sections() -> BoxResult<Vec<DirEntry>> {
     let suffix = Regex::new(r"\.([1-9])(?:[a-zA-Z]*)?\.gz$")?;
 
     // List all files in a search directory adhering to the regex pattern.
-    let mut files: Vec<DirEntry> = WalkDir::new(default_path.trim_matches('"'))
+    let mut files: Vec<DirEntry> = WalkDir::new(default_path)
         .follow_links(true)
         .into_iter()
         .filter_map(|result| result.ok())
@@ -373,12 +373,12 @@ fn get_description(path: String) -> BoxResult<String> {
                         }
                     // Else if the next lines don't end with .nd remove the ".nd " formatting and get the description from that line.
                     } else {
-                        let text = next_lines.to_lowercase().replacen(".nd ", "", 1);
+                        let text = next_lines.to_lowercase().replacen(".nd ", "", 1).replacen(".nd", "", 1);
                         description.push_str(&text);
                         found = true;
                         break;
                     }
-                // Else check if the next lines contain "-" and if after trimming end with additional formatting containing "-" or "- \\". 
+                // Else check if the next lines contain "-" and after trimming, if ends with additional "-" or "- \\" formatting. 
                 // Then get description.
                 } else {
                     if next_lines.contains("-") {
@@ -389,7 +389,7 @@ fn get_description(path: String) -> BoxResult<String> {
                                 found = true;    
                                 break; 
                             }
-                        // Else if next lines don't end with "-" then split on that line by "- " to get description.              
+                        // Else if next lines don't end with "-" then split on the next line if ut has "- " formatting to get description.              
                         } else {
                             if let Some(text) = Some(&next_lines.to_lowercase().split("- ").last().unwrap().to_string()) {
                                 description.push_str(&text);
@@ -447,7 +447,7 @@ fn index_cache() -> BoxResult<std::io::Result<()>> {
             // Populate index cache struct with split values.
             let index_details = Cache {
                 id: counter,
-                page: entry.split_whitespace().nth(0).unwrap_or("").to_owned(),
+                page: entry.split_whitespace().nth(0).unwrap_or("#").to_owned(),
                 section: entry.split_whitespace().nth(1).map(|s| s.trim_matches(|c| c == '(' || c == ')')).unwrap_or("").to_owned(),
                 description: entry.split_once(" /").unwrap().0.split(" - ").last().unwrap_or("").to_owned(),
                 file_path: entry.split_whitespace().last().unwrap_or("").to_owned(),
