@@ -277,7 +277,7 @@ fn list_all_sections() -> BoxResult<Vec<DirEntry>> {
     // A regex for a suffix covering filenames formatted like "name.1.gz" or "name.1ssl.gz" with a numeric range of 1-9.
     let suffix = Regex::new(r"\.([1-9])(?:[a-zA-Z]*)?\.gz$")?;
 
-    // List all files in a search directory adhering to the regex pattern.
+    // List all files (including symbolic links) in a search directory adhering to the regex pattern.
     let mut files: Vec<DirEntry> = WalkDir::new(default_path)
         .follow_links(true)
         .into_iter()
@@ -296,15 +296,15 @@ fn list_all_sections() -> BoxResult<Vec<DirEntry>> {
 }
 
 // Format filename and short description for displaying in terminal (ie: name (1) - description text).
-fn format_filename_description(path: String) -> BoxResult<String> {
+fn format_filename_and_description(path: String) -> BoxResult<String> {
     let description = get_description(path.clone())?.to_string();
     let mut result = String::new();
         
     // Split path from filename and format filenames by removing .gz extension and splitting at last "." character. Then add relevant description.
-    if let Some(filename) = Some(path.split("/").last().unwrap()) {
-        let mut title = filename.trim_end_matches(".gz").rsplitn(2, '.');
-        let section = title.next().unwrap();
-        let page = title.next().unwrap();
+    if let Some(file) = Some(path.split("/").last().unwrap()) {
+        let mut filename = file.trim_end_matches(".gz").rsplitn(2, '.');
+        let section = filename.next().unwrap();
+        let page = filename.next().unwrap();
 
         let new_filename = format!("{} ({}) - {}", page, section, description);
         result.push_str(&new_filename);
@@ -389,7 +389,7 @@ fn get_description(path: String) -> BoxResult<String> {
                                 found = true;    
                                 break; 
                             }
-                        // Else if next lines don't end with "-" then split on the next line if ut has "- " formatting to get description.              
+                        // Else if next lines don't end with "-" then split on that line if it has "- " formatting to get description.              
                         } else {
                             if let Some(text) = Some(&next_lines.to_lowercase().split("- ").last().unwrap().to_string()) {
                                 description.push_str(&text);
@@ -432,9 +432,9 @@ fn index_cache() -> BoxResult<std::io::Result<()>> {
 
     // Populate a Vector with entries containing all index details concatenated.
     for file in all_files {
-        let filename = format_filename_description(file.clone().path().to_str().unwrap().to_owned())?.to_string();
+        let filename_with_desc = format_filename_and_description(file.clone().path().to_str().unwrap().to_owned())?.to_string();
         let file_path = file.path().to_str().unwrap();
-        let result = filename + " " + file_path;
+        let result = filename_with_desc + " " + file_path;
                
         results.push(result);
     }
@@ -515,7 +515,6 @@ fn index_apropos_search(search_term: String) -> BoxResult<()> {
 
 // Sort and display index search results.
 fn display_index_results(mut results: Vec<String>, search_term: String) -> BoxResult<()> {
-    // Sort different page names/section numbers in ascending order.
     results.sort_by(|a, b| a.to_lowercase().cmp(&b.to_lowercase()));
     // Remove duplicate consecutive results from the sorted Vector.
     results.dedup();
