@@ -5,6 +5,7 @@ use manr::*;
 
 type TestResult = Result<(), Box<dyn Error>>;
 
+// Constants for manual commands and page paths.
 const PRG: &str = "manr";
 const INDEX_CMD: &str = "makewhatis";
 const PAGE_NOT_FOUND: &str = "manxcjgcj";
@@ -301,3 +302,6 @@ fn gzip_extract_failed() -> TestResult {
     Ok(())
 }
 
+// (Need to implement:)
+// (Tests for get descriptions from various .nd and "-" formatting)
+// (Test for failed section without page)
